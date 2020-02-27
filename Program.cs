@@ -32,9 +32,9 @@ namespace SpawnGroupsMaker
 
                 ConsoleKey key = Console.ReadKey().Key;
 
-                if (key == ConsoleKey.UpArrow)
+                if (key == ConsoleKey.UpArrow || key == ConsoleKey.U)
                     SelectedOption--;
-                else if (key == ConsoleKey.DownArrow)
+                else if (key == ConsoleKey.DownArrow || key == ConsoleKey.D)
                     SelectedOption++;
                 else if(key == ConsoleKey.Enter || key == ConsoleKey.E)
                 {
@@ -65,8 +65,8 @@ namespace SpawnGroupsMaker
         static string CreateSpawnGroup()
         {
         	Console.Clear();
-            string output = "<SpawnGroups>\n";
-            output += "\t<SpawnGroup>\n";
+            //string output = "<SpawnGroups>\n";
+            string output = "\t<SpawnGroup>\n";
 
             output += "\t\t<Id>\n";
             output += "\t\t\t<TypeId>SpawnGroupDefinition</TypeId>\n";
@@ -132,7 +132,6 @@ namespace SpawnGroupsMaker
             output += "\t</SpawnGroup>\n";
             
             Console.WriteLine("Done!");
-            
             Console.ReadKey();
             
             return output;
@@ -141,39 +140,54 @@ namespace SpawnGroupsMaker
         static void CreateFile(string text)
     	{
     		if(!File.Exists("SpawnGroups.sbc"))
-                File.Create("SpawnGroups.sbc");
+                File.Create("SpawnGroups.sbc").Dispose();
             else 
-            	return;
+           	{
+           		Console.WriteLine("File already exists! Make sure you save the current file in a separate folder to avoid loosing progress.");
+           		Console.ReadKey();
+           		return;
+           	}
             
-            FileStream file = File.OpenWrite("SpawnGroups.sbc");
+            StreamWriter file = new StreamWriter("SpawnGroups.sbc");
 			
-			string toBinary = "<?xml version=\"1.0\"?>\n<Definitions xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\n" + text + "</Definitions>";
-			
-            byte[] data = Encoding.ASCII.GetBytes(text);
+			string toBinary = "<?xml version=\"1.0\"?>\n<Definitions xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\n<SpawnGroups>\n" + text + "</SpawnGroups>\n</Definitions>";
             
-            file.Write(data);
+            file.Write(toBinary);
+            file.Dispose();
 
             Console.WriteLine("Saved!");
-            
-            Console.ReadLine();
+            Console.ReadKey();
     	}
     	
     	static void AddSpawnGroup(string text)
     	{
-    		//FileStream file = File.Open("SpawnGroups.sbc", FileMode.Open);
+    		if(!File.Exists("SpawnGroups.sbc"))
+    		{
+    			Console.WriteLine("No existing file. Create one before adding more groups.");
+    			Console.ReadKey();
+    			return;
+    		}
     		
-    		//string str = Encoding.ASCII.GetString(File.ReadAllBytes("SpawnGroups.sbc"));
+    		StreamReader fileR = new StreamReader("SpawnGroups.sbc");
+    		string str = fileR.ReadToEnd();
+    		fileR.Dispose();
     		
-    		string str = text;
+    		//string str = text;
     		
-    		int Id = str.IndexOf("<SpawnGroups>");
-    		if (Id != null)
+    		int Id = -1;
+    		Id = str.IndexOf("<SpawnGroups>");
+    		if (Id != -1)
     			Console.WriteLine("Found Id");
     		
-    		str = str.Insert(Id+1, text);
+    		str = str.Insert(Id+14, text);
     		
-    		Console.Write(str);
+    		File.WriteAllText("SpawnGroups.sbc", String.Empty);
     		
+    		StreamWriter fileW = new StreamWriter("SpawnGroups.sbc");
+    		fileW.Write(str);
+    		fileW.Dispose();
+    		
+    		Console.WriteLine("Saved!");
     		Console.ReadKey();
     	}
     }
