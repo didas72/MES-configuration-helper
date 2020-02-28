@@ -65,7 +65,7 @@ namespace SpawnGroupsMaker
         static string CreateSpawnGroup()
         {
         	Console.Clear();
-            //string output = "<SpawnGroups>\n";
+        	
             string output = "\t<SpawnGroup>\n";
 
             output += "\t\t<Id>\n";
