@@ -1,0 +1,69 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace SpawnGroupsMaker
+{
+    public class MySpawnGroup : MonoBehaviour
+    {
+        public const string TypeId = "SpawnGroupDefinition";
+        public string subtypeId = "";
+        public MyDescription description = new MyDescription();
+        public List<MyPrefab> prefabs = new List<MyPrefab>();
+        public double frequency = 1;
+        public bool isCargoShip = true;
+        public bool isPirate = false;
+        public bool isEncounter = false;
+
+        public MySpawnGroup(string SubtypeId, MyDescription Description, double Frequency)
+        {
+            subtypeId = SubtypeId; description = Description; frequency = Frequency;
+        }
+
+        public MySpawnGroup(string SubtypeId, MyDescription Description, double Frequency, bool IsCargoShip, bool IsPirate, bool IsEncounter)
+        {
+            subtypeId = SubtypeId; description = Description; frequency = Frequency;
+            isCargoShip = IsCargoShip; isPirate = IsPirate; isEncounter = IsEncounter;
+        }
+
+        public void AddPrefab(MyPrefab Prefab) => prefabs.Add(Prefab);
+
+        public void AddPrefab(string SubtypeId, string BeaconText, double Speed)
+        {
+            MyPrefab item = new MyPrefab(SubtypeId, BeaconText, Speed);
+            prefabs.Add(item);
+        }
+
+        public void AddPrefab(string SubtypeId, MyVector3 Vector3, string BeaconText, double Speed)
+        {
+            MyPrefab item = new MyPrefab(SubtypeId, Vector3, BeaconText, Speed);
+            prefabs.Add(item);
+        }
+
+        public override string ToString()
+        {
+            string output = "\t\t<SpawnGroup>\n";
+            output += "\t\t\t<Id>\n";
+            output += "\t\t\t\t<TypeId>SpawnGroupDefinition</TypeId>\n";
+            output += $"\t\t\t\t<SubtypeId>{subtypeId}</SubtypeId>\n";
+            output += "\t\t\t</Id>\n";
+            output += description.ToString();
+            output += "\t\t\n";
+            output += "\t\t\t<Icon>Textures\\GUI\\Icons\\Fake.dds</Icon>\n";
+            output += $"\t\t\t<Frequency>{Mathf.Round((float)frequency * 10) / 10}</Frequency>\n";
+            output += $"\t\t\t<IsCargoShip>{isCargoShip.ToString()}</IsCargoShip>\n";
+            output += $"\t\t\t<IsPirate>{isPirate.ToString()}</IsPirate>\n";
+            output += $"\t\t\t<IsEncounter>{isEncounter.ToString()}</IsEncounter>\n";
+            output += $"\t\t\t<Prefabs>\n";
+            output += $"\t\t\n";
+
+            foreach (MyPrefab pre in prefabs)
+                output += pre.ToString();
+
+            output += $"\t\t\t</Prefabs>\n";
+            output += $"\t\t</SpawnGroup>\n";
+
+            return output;
+        }
+    }
+}

@@ -1,0 +1,61 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace SpawnGroupsMaker
+{
+    public class MyPrefab : MonoBehaviour
+    {
+        public string subtypeId;
+        public MyVector3 position;
+        public string beaconText;
+        public double speed;
+        public string behaviour;
+        public double behaviourActivationDistance;
+
+        public MyPrefab(string SubtypeId, string BeaconText, double Speed)
+        {
+            subtypeId = SubtypeId;
+            position = new MyVector3(0,0,0);
+            beaconText = BeaconText;
+            speed = Speed;
+            behaviour = "";
+            behaviourActivationDistance = 20000.0;
+        }
+
+        public MyPrefab(string SubtypeId, MyVector3 Position, string BeaconText, double Speed)
+        {
+            subtypeId = SubtypeId;
+            position = Position;
+            beaconText = BeaconText;
+            speed = Speed;
+            behaviour = "";
+            behaviourActivationDistance = 20000.0;
+        }
+
+        public MyPrefab(string SubtypeId, string BeaconText, double Speed, string Behaviour, double BehaviourActivationDistance)
+        {
+            subtypeId = SubtypeId;
+            position = new MyVector3();
+            beaconText = BeaconText;
+            speed = Speed;
+            behaviour = Behaviour;
+            behaviourActivationDistance = BehaviourActivationDistance;
+        }
+
+        public override string ToString()
+        {
+            string output = $"\t\t\t\t<Prefab SubtypeId=\"{subtypeId}>\">\n";
+            output += "\t\t\t\t<Position>\n";
+            output += $"\t\t\t\t\t<X>{position.X}</X>\n";
+            output += $"\t\t\t\t\t<Y>{position.Y}</Y>\n";
+            output += $"\t\t\t\t\t<Z>{position.Z}</Z>\n";
+            output += "\t\t\t\t</Position>\n";
+            output += $"\t\t\t\t<BeaconText>{beaconText}</BeaconText>\n";
+            output += $"\t\t\t\t<Speed>{Mathf.Round((float)speed * 10) / 10}</Speed>\n";
+            output += "\t\t\t</Prefab>\n";
+
+            return output;
+        }
+    }
+}

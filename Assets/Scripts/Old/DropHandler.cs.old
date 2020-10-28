@@ -1,0 +1,21 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using SpawnGroupsMaker;
+
+[RequireComponent (typeof(MySpawnGroup))]
+public class DropHandler : MonoBehaviour, IDropHandler
+{
+    [SerializeField] private Program main;
+
+    void Awake()
+    {
+        main = GameObject.Find("MenuFunctions").GetComponent<Program>();
+    }
+
+    public void OnDrop(PointerEventData eventData)
+    {
+        main.AddPrefabToSpawnGroup(eventData.pointerDrag.GetComponent<MyPrefab>(), GetComponent<MySpawnGroup>());
+    }
+}

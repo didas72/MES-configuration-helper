@@ -1,0 +1,5 @@
+Todo:
+
+[]-Finish Logging
+[]-Fix delete after adding prefab to SP
+[]-Finish loading values when editing

@@ -1,0 +1,1410 @@
+using System;
+using System.IO;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace SpawnGroupsMaker
+{
+    public class Program : MonoBehaviour
+    {
+        #region UI
+        //Menus
+        [SerializeField] private GameObject mainMenu;
+        [SerializeField] private GameObject createFileMenu;
+        [SerializeField] private GameObject createSpawnGroupMenu;
+        [SerializeField] private GameObject advancedSpawnGroupMenu;
+        [SerializeField] private GameObject createPrefabMenu;
+        [SerializeField] private GameObject managmentMenu;
+
+        //Create File Menu
+        [SerializeField] private Toggle[] fileTypeToggles;
+
+        //Create SpawnGroup Menu
+        [SerializeField] private InputField SpawnGroupName;
+        [SerializeField] private Slider SpawnGroupFrequency;
+        [SerializeField] private Toggle[] SpawnGroupTypes;
+        [SerializeField] private Toggle IsTerritory;
+        [SerializeField] private Slider Frequency;
+        [SerializeField] private Text FrequencyText;
+
+        //Advanced Menu
+        #region Territory
+        [SerializeField] private InputField Name, Type;
+        [SerializeField] private Toggle Active;
+        [SerializeField] private InputField Radius;
+        [SerializeField] private Toggle ScaleRadiusWithPlanetSize;
+        [SerializeField] private InputField CoordsX, CoordsY, CoordsZ;
+        [SerializeField] private Toggle AnnounceArriveDepart;
+        [SerializeField] private InputField CustomArriveMessage, CustomDepartMessage, PlanetGeneratorName;
+        #endregion
+
+        #region Ships Or Installations
+        [SerializeField] private Toggle SpaceCargoShip, LunarCargoShip, SpaceRandomEncounter, AtmosphericCargoShip, PlanetaryInstallation, UseAutoPilotInSpace;
+        [SerializeField] private InputField PlanetaryInstallationType;
+        [SerializeField] private Toggle CutVoxelsAtAirtightCells;
+        [SerializeField] private InputField FactionOwner;
+        [SerializeField] private Toggle ReplenishSystems, UniqueEncounter, UseRandomMinerFaction, UseRandomBuilderFaction, UseRandomTraderFaction, IgnoreCleanupRules, InitializeStoreBlocks;
+        [SerializeField] private InputField PauseAutopilotAtPlayerDistance;
+        [SerializeField] private Toggle ForceStaticGrid, AdminSpawnOnly;
+        [SerializeField] private InputField MinSpawnFromWorldCenter, MaxSpawnFromWorldCenter;
+        [SerializeField] private Toggle PlanetRequiresVacuum, PlanetRequiresAtmo, PlanetRequiresOxygen;
+        [SerializeField] private InputField PlanetMinimumSize, PlanetMaximumSize;
+        [SerializeField] private Toggle UseThreatLevelCheck;
+        [SerializeField] private InputField ThreatLevelCheckRange;
+        [SerializeField] private Toggle ThreatLevelCheckOtherNPCOwners;
+        [SerializeField] private InputField ThreatScoreMinimum, ThreatScoreMaximum;
+        [SerializeField] private Toggle UsePCUCheck;
+        [SerializeField] private InputField PCUCheckRadius, PCUMinimum, PCUMaximum;
+        [SerializeField] private Toggle UsePlayerCountCheck;
+        [SerializeField] private InputField PlayerCountCheckRadius, MinimumPlayers, MaximumPlayers;
+        [SerializeField] private Toggle UsePlayerCredits, IncludeAllPlayersInRadius, IncludeFactionBalance;
+        [SerializeField] private InputField PlayerCreditCheckRadius, MinimumPlayerCredits, MaximumPlayerCredits;
+        [SerializeField] private Toggle UsePlayerFactionReputation;
+        [SerializeField] private InputField PlayerReputationCheckRadius, CheckReputationAgainstOtherNPCFaction, MinimumReputation, MaximumReputation;
+        [SerializeField] private Toggle AttachModStorageComponentToGrid;
+        [SerializeField] private InputField StorageKey, StorageValue;
+        [SerializeField] private Toggle useKnowPlayerLocations, KnownPlayerLocationMustMatchFaction;
+        [SerializeField] private InputField KnownPlayerLocationMinSpawnedEncounters, KnownPlayerLocationMaxSpawnedEncounters, Territory, MinDistanceFromTerritoryCenter, MaxDistanceFromTerritoryCenter;
+        [SerializeField] private Toggle RotateFirstCockpitToForward, SpawnRandomCargo, DisableDampeners, ReactorsOn, RemoveVoxelsIfGridRemoved;
+        #endregion
+
+
+        [SerializeField] private GameObject customLinePrefab;
+        [SerializeField] private GameObject content;
+
+        //Create Prefab Menu
+        [SerializeField] private InputField SubtypeId, BeaconText;
+        [SerializeField] private Slider Speed;
+        [SerializeField] private Text SpeedText;
+
+        //Managment Menu
+        [SerializeField] private GameObject prefabHolder;
+        [SerializeField] private GameObject spawnGroupHolder;
+        [SerializeField] private GameObject prefabProp;
+        [SerializeField] private GameObject spawnGroupProp;
+        [SerializeField] private GameObject prefabTextProp;
+
+        //Common
+        [SerializeField] private Text resultText;
+
+        //Enum
+        enum Menu
+        {
+            Main,
+            CreateFile,
+            CreateSpawnGroup,
+            CreatePrefab,
+            AdvancedSpawnGroup,
+            Managment,
+            Edit
+        }
+
+        private Menu _menu = Menu.Main;
+        #endregion
+
+        #region Variables
+        List<GameObject> spawnGroups;
+        List<GameObject> prefabs;
+        List<GameObject> customLines;
+        #endregion
+
+        #region Constants
+        [SerializeField] const string OUTPUTDIR = "Files/";
+        [SerializeField] const string SPAWNGROUPSFILENAME = "SpawnGroups.sbc";
+        [SerializeField] const string TERRITORIESFILENAME = "Territories.sbc";
+        #endregion
+
+        private void Awake()
+        {
+            //load the project
+        }//do
+
+        private void Start()
+        {
+            spawnGroups = new List<GameObject>();
+            prefabs = new List<GameObject>();
+            customLines = new List<GameObject>();
+            resultText.text = "";
+            if (!Directory.Exists(OUTPUTDIR))
+                Directory.CreateDirectory(OUTPUTDIR);
+            AddCustomLine();
+        }
+
+        #region UI Functions
+        public void Refresh()
+        {
+            if (IsTerritory.isOn)
+            {
+                TerritoryEditing(true);
+                ShipOrInstallationEditing(false);
+
+                if (AnnounceArriveDepart.isOn)
+                {
+                    CustomArriveMessage.interactable = true;
+                    CustomDepartMessage.interactable = true;
+                }
+                else
+                {
+                    CustomArriveMessage.interactable = false;
+                    CustomDepartMessage.interactable = false;
+                }
+            }
+            else
+            {
+                TerritoryEditing(false);
+                ShipOrInstallationEditing(true);
+
+                if (PlanetaryInstallation.isOn)
+                {
+                    PlanetaryInstallationType.interactable = true;
+                    CutVoxelsAtAirtightCells.interactable = true;
+                    RemoveVoxelsIfGridRemoved.interactable = true;
+                    UseAutoPilotInSpace.interactable = false;
+                }
+                else
+                {
+                    PlanetaryInstallationType.interactable = false;
+                    RemoveVoxelsIfGridRemoved.interactable = false;
+                    CutVoxelsAtAirtightCells.interactable = false;
+                    UseAutoPilotInSpace.interactable = true;
+                }
+
+                if (PlanetRequiresVacuum.isOn)
+                {
+                    PlanetRequiresAtmo.isOn = false;
+                    PlanetRequiresOxygen.isOn = false;
+                }
+                if (PlanetRequiresAtmo.isOn)
+                {
+                    PlanetRequiresVacuum.isOn = false;
+                }
+
+                if (UseThreatLevelCheck.isOn)
+                {
+                    ThreatLevelCheckOtherNPCOwners.interactable = true;
+                    ThreatLevelCheckRange.interactable = true;
+                    ThreatScoreMinimum.interactable = true;
+                    ThreatScoreMaximum.interactable = true;
+                }
+                else
+                {
+                    ThreatLevelCheckOtherNPCOwners.interactable = false;
+                    ThreatLevelCheckRange.interactable = false;
+                    ThreatScoreMinimum.interactable = false;
+                    ThreatScoreMaximum.interactable = false;
+                }
+
+                if (UsePCUCheck.isOn)
+                {
+                    PCUCheckRadius.interactable = true;
+                    PCUMinimum.interactable = true;
+                    PCUMaximum.interactable = true;
+                }
+                else
+                {
+                    PCUCheckRadius.interactable = false;
+                    PCUMinimum.interactable = false;
+                    PCUMaximum.interactable = false;
+                }
+
+                if (UsePlayerCountCheck.isOn)
+                {
+                    PlayerCountCheckRadius.interactable = true;
+                    MinimumPlayers.interactable = true;
+                    MaximumPlayers.interactable = true;
+                }
+                else
+                {
+                    PlayerCountCheckRadius.interactable = false;
+                    MinimumPlayers.interactable = false;
+                    MaximumPlayers.interactable = false;
+                }
+
+                if (UsePlayerCredits.isOn)
+                {
+                    IncludeAllPlayersInRadius.interactable = true;
+                    IncludeFactionBalance.interactable = true;
+                    PlayerCountCheckRadius.interactable = true;
+                    MinimumPlayerCredits.interactable = true;
+                    MaximumPlayerCredits.interactable = true;
+                }
+                else
+                {
+                    IncludeAllPlayersInRadius.interactable = false;
+                    IncludeFactionBalance.interactable = false;
+                    PlayerCountCheckRadius.interactable = false;
+                    MinimumPlayerCredits.interactable = false;
+                    MaximumPlayerCredits.interactable = false;
+                }
+
+                if (UsePlayerFactionReputation.isOn)
+                {
+                    PlayerReputationCheckRadius.interactable = true;
+                    CheckReputationAgainstOtherNPCFaction.interactable = true;
+                    MinimumReputation.interactable = true;
+                    MaximumReputation.interactable = true;
+                }
+                else
+                {
+                    PlayerReputationCheckRadius.interactable = false;
+                    CheckReputationAgainstOtherNPCFaction.interactable = false;
+                    MinimumReputation.interactable = false;
+                    MaximumReputation.interactable = false;
+                }
+
+                if (AttachModStorageComponentToGrid.isOn)
+                {
+                    StorageKey.interactable = true;
+                    StorageValue.interactable = true;
+                }
+                else
+                {
+                    StorageKey.interactable = false;
+                    StorageValue.interactable = false;
+                }
+
+                if (useKnowPlayerLocations.isOn)
+                {
+                    KnownPlayerLocationMustMatchFaction.interactable = true;
+                    KnownPlayerLocationMinSpawnedEncounters.interactable = true;
+                    KnownPlayerLocationMaxSpawnedEncounters.interactable = true;
+                }
+                else
+                {
+                    KnownPlayerLocationMustMatchFaction.interactable = false;
+                    KnownPlayerLocationMinSpawnedEncounters.interactable = false;
+                    KnownPlayerLocationMaxSpawnedEncounters.interactable = false;
+                }
+
+                if (!string.IsNullOrEmpty(Territory.text))
+                {
+                    MinDistanceFromTerritoryCenter.interactable = true;
+                    MaxDistanceFromTerritoryCenter.interactable = true;
+                }
+                else
+                {
+                    MinDistanceFromTerritoryCenter.interactable = false;
+                    MaxDistanceFromTerritoryCenter.interactable = false;
+                }
+            }
+        }
+
+        public void ChangeFrequency()
+        {
+            FrequencyText.text = "" + Frequency.value;
+        }
+
+        public void ChangeSpeed()
+        {
+            SpeedText.text = "" + Speed.value;
+        }
+
+        public void TerritoryEditing(bool value)
+        {
+            Name.interactable = value;
+            Type.interactable = value;
+            Active.interactable = value;
+            Radius.interactable = value;
+            ScaleRadiusWithPlanetSize.interactable = value;
+            CoordsX.interactable = value; CoordsY.interactable = value; CoordsZ.interactable = value;
+            AnnounceArriveDepart.interactable = value;
+            CustomArriveMessage.interactable = value; CustomDepartMessage.interactable = value;
+            PlanetGeneratorName.interactable = value;
+        }
+
+        public void ShipOrInstallationEditing(bool value)
+        {
+            SpaceCargoShip.interactable = value; LunarCargoShip.interactable = value; SpaceRandomEncounter.interactable = value; AtmosphericCargoShip.interactable = value; PlanetaryInstallation.interactable = value;
+            UseAutoPilotInSpace.interactable = value;
+            PlanetaryInstallationType.interactable = value;
+            CutVoxelsAtAirtightCells.interactable = value;
+            FactionOwner.interactable = value;
+            ReplenishSystems.interactable = value;
+            UniqueEncounter.interactable = value;
+            UseRandomMinerFaction.interactable = value;
+            UseRandomBuilderFaction.interactable = value;
+            UseRandomTraderFaction.interactable = value;
+            IgnoreCleanupRules.interactable = value;
+            InitializeStoreBlocks.interactable = value;
+            PauseAutopilotAtPlayerDistance.interactable = value;
+            ForceStaticGrid.interactable = value;
+            AdminSpawnOnly.interactable = value;
+            MinSpawnFromWorldCenter.interactable = value;
+            MaxSpawnFromWorldCenter.interactable = value;
+            PlanetRequiresAtmo.interactable = value;
+            PlanetRequiresOxygen.interactable = value;
+            PlanetRequiresVacuum.interactable = value;
+            UseThreatLevelCheck.interactable = value;
+            ThreatLevelCheckRange.interactable = value;
+            ThreatLevelCheckOtherNPCOwners.interactable = value;
+            ThreatScoreMinimum.interactable = value;
+            ThreatScoreMaximum.interactable = value;
+            UsePCUCheck.interactable = value;
+            PCUCheckRadius.interactable = value;
+            PCUMinimum.interactable = value;
+            PCUMaximum.interactable = value;
+            UsePlayerCountCheck.interactable = value;
+            PlayerCountCheckRadius.interactable = value;
+            MinimumPlayers.interactable = value;
+            MaximumPlayers.interactable = value;
+            UsePlayerCredits.interactable = value;
+            IncludeAllPlayersInRadius.interactable = value;
+            IncludeFactionBalance.interactable = value;
+            PlayerCreditCheckRadius.interactable = value;
+            MinimumPlayerCredits.interactable = value;
+            MaximumPlayerCredits.interactable = value;
+            UsePlayerFactionReputation.interactable = value;
+            PlayerReputationCheckRadius.interactable = value;
+            CheckReputationAgainstOtherNPCFaction.interactable = value;
+            MinimumReputation.interactable = value;
+            MaximumReputation.interactable = value;
+            AttachModStorageComponentToGrid.interactable = value;
+            StorageKey.interactable = value;
+            StorageValue.interactable = value;
+            useKnowPlayerLocations.interactable = value;
+            KnownPlayerLocationMustMatchFaction.interactable = value;
+            KnownPlayerLocationMinSpawnedEncounters.interactable = value;
+            KnownPlayerLocationMaxSpawnedEncounters.interactable = value;
+            Territory.interactable = value;
+            MinDistanceFromTerritoryCenter.interactable = value;
+            MaxDistanceFromTerritoryCenter.interactable = value;
+            RotateFirstCockpitToForward.interactable = value;
+            SpawnRandomCargo.interactable = value;
+            DisableDampeners.interactable = value;
+            ReactorsOn.interactable = value;
+            RemoveVoxelsIfGridRemoved.interactable = value;
+        }
+
+        public void Back()
+        {
+            switch(_menu)
+            {
+                case Menu.Main:
+                    return;
+
+                case Menu.CreateFile:
+                    createFileMenu.SetActive(false);
+                    mainMenu.SetActive(true);
+                    _menu = Menu.Main;
+                    return;
+
+                case Menu.CreatePrefab:
+                    createPrefabMenu.SetActive(false);
+                    mainMenu.SetActive(true);
+                    _menu = Menu.Main;
+                    return;
+
+                case Menu.CreateSpawnGroup:
+                    createSpawnGroupMenu.SetActive(false);
+                    mainMenu.SetActive(true);
+                    _menu = Menu.Main;
+                    return;
+
+                case Menu.AdvancedSpawnGroup:
+                    advancedSpawnGroupMenu.SetActive(false);
+                    createSpawnGroupMenu.SetActive(true);
+                    _menu = Menu.CreateSpawnGroup;
+                    return;
+
+                case Menu.Managment:
+                    managmentMenu.SetActive(false);
+                    mainMenu.SetActive(true);
+                    _menu = Menu.Main;
+                    return;
+
+                case Menu.Edit:
+                    //action
+                    _menu = Menu.Edit;
+                    return;
+            }
+        }
+
+        public void OpenCreateFileMenu()
+        {
+            mainMenu.SetActive(false);
+            createFileMenu.SetActive(true);
+            _menu = Menu.CreateFile;
+        }
+
+        public void OpenCreateSpawnGroupMenu()
+        {
+            mainMenu.SetActive(false);
+            advancedSpawnGroupMenu.SetActive(false);
+            createSpawnGroupMenu.SetActive(true);
+            _menu = Menu.CreateSpawnGroup;
+        }
+
+        public void OpenNewPrefabMenu()
+        {
+            mainMenu.SetActive(false);
+            createPrefabMenu.SetActive(true);
+            _menu = Menu.CreatePrefab;
+        }
+
+        public void OpenAdvancedSpawnGroupMenu()
+        {
+            createSpawnGroupMenu.SetActive(false);
+            advancedSpawnGroupMenu.SetActive(true);
+            _menu = Menu.AdvancedSpawnGroup;
+        }
+
+        public void OpenManagmentMenu()
+        {
+            mainMenu.SetActive(false);
+            managmentMenu.SetActive(true);
+            _menu = Menu.Managment;
+        }
+
+        public void OpenEditMenu()
+        {
+
+        }//do
+
+        public void UntoggleAll(Toggle sender)
+        {
+            if(sender.isOn)
+            {
+                foreach (Toggle toggle in fileTypeToggles)
+                {
+                    if (toggle != sender)
+                        toggle.isOn = false;
+                }
+            }
+        }
+
+        public void UntoggleOtherTypes(Toggle source)
+        {
+            if (!source.isOn)
+                return;
+
+            if(source == SpaceCargoShip)
+            {
+                LunarCargoShip.isOn = false;
+                SpaceRandomEncounter.isOn = false;
+                AtmosphericCargoShip.isOn = false;
+                PlanetaryInstallation.isOn = false;
+            }
+            else if(source == LunarCargoShip)
+            {
+                SpaceCargoShip.isOn = false;
+                SpaceRandomEncounter.isOn = false;
+                AtmosphericCargoShip.isOn = false;
+                PlanetaryInstallation.isOn = false;
+            }
+            else if (source == SpaceRandomEncounter)
+            {
+                SpaceCargoShip.isOn = false;
+                LunarCargoShip.isOn = false;
+                AtmosphericCargoShip.isOn = false;
+                PlanetaryInstallation.isOn = false;
+            }
+            else if (source == AtmosphericCargoShip)
+            {
+                SpaceCargoShip.isOn = false;
+                SpaceRandomEncounter.isOn = false;
+                LunarCargoShip.isOn = false;
+                PlanetaryInstallation.isOn = false;
+            }
+            else if (source == PlanetaryInstallation)
+            {
+                SpaceCargoShip.isOn = false;
+                SpaceRandomEncounter.isOn = false;
+                AtmosphericCargoShip.isOn = false;
+                LunarCargoShip.isOn = false;
+            }
+        }
+
+        public void Exit()
+        {
+            Application.Quit();
+        }
+
+        public void AddCustomLine()
+        {
+            Instantiate(customLinePrefab, content.transform);
+        }
+        #endregion
+
+        #region Functions
+        public void CreateFile()
+        {
+            int type = -1;
+            for(int i = 0; i < fileTypeToggles.Length; i++)
+            {
+                if(fileTypeToggles[i].isOn)
+                {
+                    type = i;
+                    break;
+                }
+            }
+
+            switch(type)
+            {
+                case 0:
+                    if (File.Exists(OUTPUTDIR + SPAWNGROUPSFILENAME))
+                    {
+                        resultText.text = "File already exists! Please move any file to a different directory.";
+                        Back();
+                        return;
+                    }
+                    else
+                    {
+                        File.Create(OUTPUTDIR + SPAWNGROUPSFILENAME).Dispose();
+                        resultText.text = "File created!";
+                        Back();
+                    }
+                    break;
+
+                case 1:
+                    if (File.Exists(OUTPUTDIR + TERRITORIESFILENAME))
+                    {
+                        resultText.text = "File already exists! Please move any file to a different directory.";
+                        Back();
+                        return;
+                    }
+                    else
+                    {
+                        File.Create(OUTPUTDIR + TERRITORIESFILENAME).Dispose();
+                        resultText.text = "File created!";
+                        Back();
+                    }
+                    break;
+            }
+            
+        }
+
+        public void CreateNewSpawnGroup()
+        {
+            MyDescription desc = new MyDescription
+            {
+                isTerritory = IsTerritory.isOn
+            };
+
+            if (IsTerritory.isOn)
+            {
+                desc.name = Name.text;
+                desc.type = Type.text;
+                desc.active = Active.isOn;
+                if (!double.TryParse(Radius.text, out desc.radius))
+                {
+                    resultText.text = $"Territory radius ({Radius.text}) is not a valid number!";
+                    return;
+                }
+                desc.scaleRadiusWithPlanetSize = ScaleRadiusWithPlanetSize.isOn;
+                if (!double.TryParse(CoordsX.text, out desc.coordsX))
+                {
+                    resultText.text = $"CoordsX ({CoordsX.text}) is not a valid number!";
+                    return;
+                }
+                if (!double.TryParse(CoordsY.text, out desc.coordsY))
+                {
+                    resultText.text = $"CoordsY ({CoordsY.text}) is not a valid number!";
+                    return;
+                }
+                if (!double.TryParse(CoordsZ.text, out desc.coordsZ))
+                {
+                    resultText.text = $"CoordsZ ({CoordsZ.text}) is not a valid number!";
+                    return;
+                }
+                desc.announceArriveDepart = AnnounceArriveDepart.isOn;
+                desc.customArriveMessage = CustomArriveMessage.text;
+                desc.customDepartMessage = CustomDepartMessage.text;
+                desc.planetGeneratorName = PlanetGeneratorName.text;
+            }
+            else
+            {
+                desc.spaceCargoShip = SpaceCargoShip.isOn;
+                desc.lunarCargoShip = LunarCargoShip.isOn;
+                desc.spaceRandomEncounter = SpaceRandomEncounter.isOn;
+                desc.atmosphericCargoShip = AtmosphericCargoShip.isOn;
+                desc.planetaryInstallation = PlanetaryInstallation.isOn;
+                if (!PlanetaryInstallation.isOn)
+                    desc.useAutoPilotInSpace = UseAutoPilotInSpace.isOn;
+                if (PlanetaryInstallation.isOn)
+                {
+                    desc.planetaryInstallationType = PlanetaryInstallationType.text;
+                    desc.cutVoxelsAtAirtightCells = CutVoxelsAtAirtightCells.isOn;
+                    desc.removeVoxelsIfGridRemoved = RemoveVoxelsIfGridRemoved.isOn;
+                }
+                desc.factionOwner = FactionOwner.text;
+                desc.replenishSystems = ReplenishSystems.isOn;
+                desc.uniqueEncounter = UniqueEncounter.isOn;
+                desc.useRandomBuilderFaction = UseRandomBuilderFaction.isOn;
+                desc.useRandomMinerFaction = UseRandomMinerFaction.isOn;
+                desc.useRandomTraderFaction = UseRandomTraderFaction.isOn;
+                desc.ignoreCleanupRules = IgnoreCleanupRules.isOn;
+                desc.initializeStoreBlocks = InitializeStoreBlocks.isOn;
+                if (!double.TryParse(PauseAutopilotAtPlayerDistance.text, out desc.pauseAutopilotAtPlayerDistance))
+                {
+                    resultText.text = $"Pause Autopilot At Player Distance ({PauseAutopilotAtPlayerDistance.text}) is not a valid number!";
+                    return;
+                }
+                desc.forceStaticGrid = ForceStaticGrid.isOn;
+                desc.adminSpawnOnly = AdminSpawnOnly.isOn;
+                if (!double.TryParse(MinSpawnFromWorldCenter.text, out desc.minDistanceFromTerritoryCenter))
+                {
+                    resultText.text = $"(Min Spawn From World Center ({MinSpawnFromWorldCenter.text}) is not a valid number!";
+                    return;
+                }
+                if (!double.TryParse(MaxSpawnFromWorldCenter.text, out desc.maxDistanceFromTerritoryCenter))
+                {
+                    resultText.text = $"(Max Spawn From World Center ({MaxSpawnFromWorldCenter.text}) is not a valid number!";
+                    return;
+                }
+                desc.planetRequiresVacuum = PlanetRequiresVacuum.isOn;
+                desc.planetRequiresAtmo = PlanetRequiresAtmo.isOn;
+                desc.planetRequiresOxygen = PlanetRequiresOxygen.isOn;
+                if (!double.TryParse(PlanetMinimumSize.text, out desc.planetMinimumSize))
+                {
+                    resultText.text = $"(Planet Minimum Size ({PlanetMinimumSize.text}) is not a valid number!";
+                    return;
+                }
+                if (!double.TryParse(PlanetMaximumSize.text, out desc.planetMaximumSize))
+                {
+                    resultText.text = $"(Planet Maximum Size ({PlanetMaximumSize.text}) is not a valid number!";
+                    return;
+                }
+                desc.useThreatLevelCheck = UseThreatLevelCheck.isOn;
+                if(UseThreatLevelCheck.isOn)
+                {
+                    desc.threatLevelCheckOtherNPCOwners = ThreatLevelCheckOtherNPCOwners.isOn;
+                    if (!double.TryParse(ThreatLevelCheckRange.text, out desc.threatLevelCheckRange))
+                    {
+                        resultText.text = $"(Threat Level Check Range ({ThreatLevelCheckRange.text}) is not a valid number!";
+                        return;
+                    }
+                    if (!double.TryParse(ThreatScoreMinimum.text, out desc.threatScoreMinimum))
+                    {
+                        resultText.text = $"(Threat Score Minimum ({ThreatScoreMinimum.text}) is not a valid number!";
+                        return;
+                    }
+                    if (!double.TryParse(ThreatScoreMaximum.text, out desc.threatLevelCheckRange))
+                    {
+                        resultText.text = $"(Threat Score Maximum ({ThreatScoreMaximum.text}) is not a valid number!";
+                        return;
+                    }
+                }
+                desc.usePCUCheck = UsePCUCheck.isOn;
+                if(UsePCUCheck.isOn)
+                {
+                    if (!double.TryParse(PCUCheckRadius.text, out desc.PCUCheckRadius))
+                    {
+                        resultText.text = $"(PCU Check Radius ({PCUCheckRadius.text}) is not a valid number!";
+                        return;
+                    }
+                    if (!double.TryParse(PCUMinimum.text, out desc.PCUMinimun))
+                    {
+                        resultText.text = $"(PCU Minimum ({PCUMinimum.text}) is not a valid number!";
+                        return;
+                    }
+                    if (!double.TryParse(PCUMaximum.text, out desc.PCUMaximum))
+                    {
+                        resultText.text = $"(PCU Maximum ({PCUMaximum.text}) is not a valid number!";
+                        return;
+                    }
+                }
+                desc.usePlayerCountCheck = UsePlayerCountCheck.isOn;
+                if(UsePlayerCountCheck.isOn)
+                {
+                    if (!double.TryParse(PlayerCountCheckRadius.text, out desc.playerCountCheckRadius))
+                    {
+                        resultText.text = $"(Player Count Check Radius ({PlayerCountCheckRadius.text}) is not a valid number!";
+                        return;
+                    }
+                    if (!int.TryParse(MinimumPlayers.text, out desc.minimumPlayers))
+                    {
+                        resultText.text = $"(Minimum Players ({MinimumPlayers.text}) is not a valid number!";
+                        return;
+                    }
+                    if (!int.TryParse(MaximumPlayers.text, out desc.maximumPlayers))
+                    {
+                        resultText.text = $"(Planet Maximum Size ({MaximumPlayers.text}) is not a valid number!";
+                        return;
+                    }
+                }
+                desc.usePlayerCredits = UsePlayerCredits.isOn;
+                if(UsePlayerCredits.isOn)
+                {
+                    desc.includeAllPlayersInRadius = IncludeAllPlayersInRadius.isOn;
+                    desc.includeFactionBalance = IncludeFactionBalance.isOn;
+                    if (!double.TryParse(PlayerCreditCheckRadius.text, out desc.playerCreditCheckRadius))
+                    {
+                        resultText.text = $"(Player Credit Check Radius ({PlayerCreditCheckRadius.text}) is not a valid number!";
+                        return;
+                    }
+                    if (!int.TryParse(MinimumPlayerCredits.text, out desc.minimumPlayerCredits))
+                    {
+                        resultText.text = $"(Minimum Player Credits ({MinimumPlayerCredits.text}) is not a valid number!";
+                        return;
+                    }
+                    if (!int.TryParse(MaximumPlayerCredits.text, out desc.maximumPlayerCredits))
+                    {
+                        resultText.text = $"(Maximum Player Credits ({MaximumPlayerCredits.text}) is not a valid number!";
+                        return;
+                    }
+                }
+                desc.usePlayerFactionReputation = UsePlayerFactionReputation.isOn;
+                if(UsePlayerFactionReputation.isOn)
+                {
+                    if (!double.TryParse(PlayerReputationCheckRadius.text, out desc.playerReputationCheckRadius))
+                    {
+                        resultText.text = $"(Player Reputation Check Radius ({PlayerReputationCheckRadius.text}) is not a valid number!";
+                        return;
+                    }
+                    desc.checkReputationAgainstOtherNPCFaction = CheckReputationAgainstOtherNPCFaction.text;
+                    if (!double.TryParse(MinimumReputation.text, out desc.minimumReputation))
+                    {
+                        resultText.text = $"(Minimum Reputation ({MinimumReputation.text}) is not a valid number!";
+                        return;
+                    }
+                    if (!double.TryParse(MaximumReputation.text, out desc.maximumReputation))
+                    {
+                        resultText.text = $"(Maximum Reputation ({MaximumReputation.text}) is not a valid number!";
+                        return;
+                    }
+                }
+                desc.attachModStorageComponentToGrid = AttachModStorageComponentToGrid.isOn;
+                if(AttachModStorageComponentToGrid.isOn)
+                {
+                    desc.storageKey = StorageKey.text;
+                    desc.storageValue = StorageValue.text;
+                }
+                desc.useKnowPlayerLocations = useKnowPlayerLocations.isOn;
+                if(useKnowPlayerLocations.isOn)
+                {
+                    desc.knownPlayerLocationMustMatchFaction = KnownPlayerLocationMustMatchFaction.isOn;
+                    if (!double.TryParse(KnownPlayerLocationMinSpawnedEncounters.text, out desc.knownPlayerLocationMinSpawnedEncounters))
+                    {
+                        resultText.text = $"(Known Player Location Min Spawned Encounters ({KnownPlayerLocationMinSpawnedEncounters.text}) is not a valid number!";
+                        return;
+                    }
+                    if (!double.TryParse(KnownPlayerLocationMaxSpawnedEncounters.text, out desc.knownPlayerLocationMaxSpawnedEncounters))
+                    {
+                        resultText.text = $"(Known Player Location Max Spawned Encounters ({KnownPlayerLocationMaxSpawnedEncounters.text}) is not a valid number!";
+                        return;
+                    }
+                }
+                desc.territory = Territory.text;
+                if(Territory.text.Length != 0)
+                {
+                    if (!double.TryParse(MinDistanceFromTerritoryCenter.text, out desc.minDistanceFromTerritoryCenter))
+                    {
+                        resultText.text = $"(Min Distance From Territory Center ({MinDistanceFromTerritoryCenter.text}) is not a valid number!";
+                        return;
+                    }
+                    if (!double.TryParse(MaxDistanceFromTerritoryCenter.text, out desc.maxDistanceFromTerritoryCenter))
+                    {
+                        resultText.text = $"(Max Distance From Territory Center ({MaxDistanceFromTerritoryCenter.text}) is not a valid number!";
+                        return;
+                    }
+                }
+                desc.rotateFirstCockpitToForward = RotateFirstCockpitToForward.isOn;
+                desc.spawnRandomCargo = SpawnRandomCargo.isOn;
+                desc.disableDampeners = DisableDampeners.isOn;
+                desc.reactorsOn = ReactorsOn.isOn;
+            }
+
+            foreach(GameObject go in customLines)
+            {
+                desc.customLines.Add(go.GetComponentInChildren<InputField>().text);
+            }
+
+            GameObject spawnGroup = Instantiate(spawnGroupProp, spawnGroupHolder.transform);
+
+            MySpawnGroup current = spawnGroup.AddComponent<MySpawnGroup>();
+
+            spawnGroup.GetComponent<MySpawnGroup>().subtypeId = SpawnGroupName.text;
+            spawnGroup.GetComponent<MySpawnGroup>().description = desc;
+            spawnGroup.GetComponent<MySpawnGroup>().frequency = SpawnGroupFrequency.value;
+            spawnGroup.GetComponent<MySpawnGroup>().isCargoShip = SpawnGroupTypes[0].isOn;
+            spawnGroup.GetComponent<MySpawnGroup>().isPirate = SpawnGroupTypes[1].isOn;
+            spawnGroup.GetComponent<MySpawnGroup>().isEncounter = SpawnGroupTypes[2].isOn;
+
+            spawnGroup.transform.Find("Name").GetComponent<Text>().text = spawnGroup.GetComponent<MySpawnGroup>().subtypeId;
+
+            resultText.text = $"{current.subtypeId} sucessfully created!";
+
+            spawnGroups.Add(spawnGroup);
+
+            Back();
+        }
+
+        public void CreateNewPrefab()
+        {
+            GameObject prefab = Instantiate(prefabProp, prefabHolder.transform);
+
+            prefab.AddComponent<MyPrefab>().subtypeId = SubtypeId.text;
+            prefab.GetComponent<MyPrefab>().beaconText = BeaconText.text;
+            prefab.GetComponent<MyPrefab>().speed = Speed.value;
+            prefab.GetComponent<MyPrefab>().position = new MyVector3(0,0,0); 
+
+            prefab.transform.Find("Name").GetComponent<Text>().text = prefab.GetComponent<MyPrefab>().subtypeId;
+
+            resultText.text = $"{prefab.GetComponent<MyPrefab>().subtypeId} sucessfully created!";
+
+            prefabs.Add(prefab);
+
+            Back();
+        }
+
+        public void DeletePrefab(GameObject go)
+        {
+            prefabs.Remove(go);
+            Destroy(go);
+        }
+
+        public void DeleteSpawnGroup(GameObject go)
+        {
+            spawnGroups.Remove(go);
+            Destroy(go);
+        }
+
+        public void OpenSpawnGroup(GameObject go)
+        {
+
+        }//do
+
+        public void AddPrefabToSpawnGroup(MyPrefab prefab, MySpawnGroup spawnGroup)
+        {
+            spawnGroups[FindIdFromList(spawnGroups, spawnGroup.gameObject)].GetComponent<MySpawnGroup>().prefabs.Add(prefab);
+            GameObject Prefab = Instantiate(prefabProp, prefabHolder.transform);
+            Prefab.AddComponent<MyPrefab>();
+            Prefab.GetComponent<MyPrefab>().subtypeId = prefab.subtypeId;
+            Prefab.GetComponent<MyPrefab>().beaconText = prefab.beaconText;
+            Prefab.GetComponent<MyPrefab>().behaviour = prefab.behaviour;
+            Prefab.GetComponent<MyPrefab>().behaviourActivationDistance = prefab.behaviourActivationDistance;
+            Prefab.GetComponent<MyPrefab>().speed = prefab.speed;
+            Prefab.GetComponent<MyPrefab>().position = prefab.position;
+            
+            Prefab.transform.Find("Name").GetComponent<Text>().text = Prefab.GetComponent<MyPrefab>().subtypeId;
+            Destroy(prefab.gameObject);
+
+            spawnGroup.GetComponent<RectTransform>().sizeDelta += new Vector2(0,50);
+            Instantiate(prefabTextProp, new Vector3(spawnGroup.transform.position.x, spawnGroup.transform.position.y - spawnGroup.GetComponent<RectTransform>().sizeDelta.y / 2 + 25, 0), Quaternion.identity, spawnGroup.transform).GetComponent<Text>().text = $"-{Prefab.GetComponent<MyPrefab>().subtypeId}";
+            
+        }
+
+        public int FindIdFromList<T>(List<T> list, T _object)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                if(list[i].Equals(_object))
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public void SaveToFile()
+        {
+            bool hasTerritories = false;
+            bool hasSpawnGroups = false;
+            for(int i = 0; i < spawnGroups.Count; i++)
+            {
+                if(spawnGroups[i].GetComponent<MySpawnGroup>().description.isTerritory)
+                {
+                    hasTerritories = true;
+                }
+                else
+                {
+                    hasSpawnGroups = true;
+                }
+            }
+
+            if (hasSpawnGroups)
+            {
+                if (File.Exists(OUTPUTDIR + SPAWNGROUPSFILENAME))
+                {
+                    string output = "<?xml version=\"1.0\"?>\n";
+                    output += "<Definitions xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\n";
+                    output += "\t<SpawnGroups>\n";
+
+                    for (int i = 0; i < spawnGroups.Count; i++)
+                    {
+                        if (!spawnGroups[i].GetComponent<MySpawnGroup>().description.isTerritory)
+                        {
+                            output += spawnGroups[i].GetComponent<MySpawnGroup>().ToString();
+                        }
+                    }
+
+                    output += "\t</SpawnGroups>\n";
+                    output += "</Definitions>";
+
+                    File.WriteAllText(OUTPUTDIR + SPAWNGROUPSFILENAME, output);
+                }
+                else
+                {
+                    resultText.text = "There is no Spawngroup file. Create one first.";
+                    Back();
+                }
+            }
+
+            if (hasTerritories)
+            {
+                if (File.Exists(OUTPUTDIR + TERRITORIESFILENAME))
+                {
+                    string output = "";
+
+                    for (int i = 0; i < spawnGroups.Count; i++)
+                    {
+                        if (spawnGroups[i].GetComponent<MySpawnGroup>().description.isTerritory)
+                        {
+                            output += spawnGroups[i].GetComponent<MySpawnGroup>().ToString();
+                        }
+                    }
+
+                    File.WriteAllText(OUTPUTDIR + TERRITORIESFILENAME, output);
+                }
+                else
+                {
+                    resultText.text = "There is no Territories file. Create one first.";
+                    Back();
+                }
+            }
+
+            resultText.text = "File saved! Check the \"Files\" folder.";
+        }
+        #endregion
+
+        #region OldFunctions
+        /*static string OldCreateSpawnGroup()
+        {
+            string output = "\t<SpawnGroup>\n";
+			
+            output += "\t\t<Id>\n";
+            output += "\t\t\t<TypeId>SpawnGroupDefinition</TypeId>\n";
+			
+            Console.WriteLine("Groupe name: ");
+            output += $"\t\t\t<SubtypeId>{Console.ReadLine()}</SubtypeId>\n";
+            output += "\t\t</Id>\n";
+            output += "\t\t<Description>\n";
+			
+            output += "\t\t[Modular Encounters SpawnGroup]\n";
+			
+            Console.WriteLine("Craft type:\n1)Atmospheric cargo ship\n2)Space cargo ship\n3)Lunar cargo ship\n4)Random space encounter\n5)Planetary installation");
+            string type = Console.ReadLine();
+			while(type != "1" && type != "2" && type != "3" && type != "4" && type != "5")
+			{
+				Console.WriteLine(type + " is not a valid option. Please insert one of the given.");
+				type = Console.ReadLine();
+			}
+            if (type == "1")
+                output += "\t\t[AtmosphericCargoShip:true]\n";
+            else if (type == "2")
+                output += "\t\t[SpaceCargoShip:true]\n";
+            else if (type == "3")
+                output += "\t\t[LunarCargoShip:true]\n";
+            else if (type == "4")
+                output += "\t\t[RandomSpaceEncounter:true]\n";
+            else if (type == "5")
+                output += "\t\t[PlanetaryInstallation:true]\n";
+			
+            Console.WriteLine("Faction name (no spaces): ");
+            string factionName = Console.ReadLine();
+            while(factionName.Contains(" "))
+            {
+            	Console.WriteLine("Name Has Spaces! Please insert a valid name.");
+            	factionName = Console.ReadLine();
+        	}
+            output += $"\t\t[FactionOwner:{factionName}]\n";
+            output += "\t\t[ReplenishSystems:true]\n";
+            output += "\t\t</Description>\n";
+            output += "\t\t<Icon>Textures\\GUI\\Icons\\Fake.dds</Icon>";
+			
+            Console.WriteLine("Is pirate (true/false): ");
+            string isPirate = Console.ReadLine();
+            while(isPirate != "true" && isPirate != "false")
+            {
+                Console.WriteLine(isPirate + " is not a valid value. Please insert one of the given");
+                isPirate = Console.ReadLine();
+            }
+            output += $"\t\t<IsPirate>{isPirate}</IsPirate>\n";
+			
+            Console.WriteLine("Frequency: ");
+            string freq = Console.ReadLine();
+            double result;
+            while (!double.TryParse(freq, out result))
+            {
+                Console.WriteLine(freq + " is not a valid number. Please insert a valid number.");
+                freq = Console.ReadLine();
+            }
+            output += $"\t\t<Frequency>{freq}</Frequency>\n";
+            output += "\t\t<Prefabs>\n";//here-------------------------------------------------------------
+			
+            Console.WriteLine("Ship file name (no extension): ");
+            string fileName = Console.ReadLine();
+            output += $"\t\t\t<Prefab SubtypeId=\"{fileName}\">\n";
+            output += "\t\t\t\t<Position>\n";
+            output += "\t\t\t\t\t<X>0.0</X>\n";
+            output += "\t\t\t\t\t<Y>0.0</Y>\n";
+            output += "\t\t\t\t\t<Z>0.0</Z>\n";
+            output += "\t\t\t\t</Position>\n";
+			
+            Console.WriteLine("Speed: ");
+            string speed = Console.ReadLine();
+            while (!double.TryParse(speed, out result))
+            {
+                Console.WriteLine(speed + " is not a valid number. Please insert a valid number.");
+                speed = Console.ReadLine();
+            }
+            output += $"\t\t\t\t<Speed>{speed}</Speed>\n";
+            output += "\t\t\t\t<Behaviour></Behaviour>\n";
+            output += "\t\t\t\t<BehaviourActivationDistance>20000</BehaviourActivationDistance>\n";
+            output += "\t\t\t</Prefab>\n";//end of here----------------------------------------------------
+            output += "\t\t</Prefabs>\n";
+            output += "\t</SpawnGroup>\n";
+            
+            Console.WriteLine("Spawn Group Complete!");
+            
+            return output;
+        }
+
+        static string OldCreatePrefab()
+        {
+            string output = "\t\t<Prefabs>\n";//here-------------------------------------------------------------
+
+            Console.WriteLine("Ship file name (no extension): ");
+            string fileName = Console.ReadLine();
+            output += $"\t\t\t<Prefab SubtypeId=\"{fileName}\">\n";
+            output += "\t\t\t\t<Position>\n";
+            output += "\t\t\t\t\t<X>0.0</X>\n";
+            output += "\t\t\t\t\t<Y>0.0</Y>\n";
+            output += "\t\t\t\t\t<Z>0.0</Z>\n";
+            output += "\t\t\t\t</Position>\n";
+
+            Console.WriteLine("Speed: ");
+            string speed = Console.ReadLine();
+            double result;
+            while (!double.TryParse(speed, out result))
+            {
+                Console.WriteLine(speed + " is not a valid number. Please insert a valid number.");
+                speed = Console.ReadLine();
+            }
+            output += $"\t\t\t\t<Speed>{speed}</Speed>\n";
+            output += "\t\t\t\t<Behaviour></Behaviour>\n";
+            output += "\t\t\t\t<BehaviourActivationDistance>20000</BehaviourActivationDistance>\n";
+            output += "\t\t\t</Prefab>\n";//end of here----------------------------------------------------
+
+            return output;
+        }
+        
+        static void OldCreateFile()
+    	{
+    		if(!File.Exists("SpawnGroups.sbc"))
+                File.Create("SpawnGroups.sbc").Dispose();
+            else 
+           		return;
+            
+            StreamWriter file = new StreamWriter("SpawnGroups.sbc");
+			
+			string toBinary = "<?xml version=\"1.0\"?>\n<Definitions xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\n<SpawnGroups>\n</SpawnGroups>\n</Definitions>";
+            
+            file.Write(toBinary);
+            file.Dispose();
+		}
+		
+		static void OldAddSpawnGroup(string text)
+		{
+			if(!File.Exists("SpawnGroups.sbc"))
+    		{
+    			Console.WriteLine("No existing file. Create one before adding more groups.");
+    			Console.ReadKey();
+    			return;
+    		}
+    		
+    		StreamReader fileR = new StreamReader("SpawnGroups.sbc");
+    		string str = fileR.ReadToEnd();
+    		fileR.Dispose();
+    		
+    		int Id = -1;
+    		Id = str.IndexOf("<SpawnGroups>");
+    		if (Id != -1)
+    			Console.WriteLine("Found Id");
+    		
+    		str = str.Insert(Id+14, text);
+    		
+    		File.WriteAllText("SpawnGroups.sbc", String.Empty);
+    		
+    		StreamWriter fileW = new StreamWriter("SpawnGroups.sbc");
+    		fileW.Write(str);
+    		fileW.Dispose();
+    		
+    		Console.WriteLine("Spawn Group Saved!");
+    	}*/
+        #endregion
+    }
+
+    public class MyDescription
+    {
+        public const string spawngroupHeader = "[Modular Encounters SpawnGroup]";
+        public const string territoryHeader = "[Modular Encounters Territory]";
+
+        public bool isTerritory = false;
+
+        //territory only
+        public string name = "";
+        public string type = "";//Static or Planetary
+        public bool active = true;
+        public double radius = 0;
+        public bool scaleRadiusWithPlanetSize = false;
+        public double coordsX = 0, coordsY = 0, coordsZ = 0;
+        public bool announceArriveDepart = false;
+        public string customArriveMessage = "";
+        public string customDepartMessage = "";
+        public string planetGeneratorName = "";//EarthLike,Mars,Titan, other planet generator name
+
+        //spawngroup only
+        public bool spaceCargoShip = true;
+        public bool lunarCargoShip = false;
+        public bool spaceRandomEncounter = false;
+        public bool atmosphericCargoShip = false;
+        public bool planetaryInstallation = false;
+        public bool useAutoPilotInSpace = false;
+        public string planetaryInstallationType = "";//Small, Medium or Large. default is Small //7
+        //public List<MyRotation> rotateInstallations; will introduce as custom lines -------------------------
+        //public List<bool> reverseForwardDirections; will introduce as custom lines --------------------------
+        public bool cutVoxelsAtAirtightCells = true;
+        public string factionOwner = "SPRT";
+        public bool replenishSystems = true;
+        public bool uniqueEncounter = false;
+        public bool useRandomMinerFaction = false;
+        public bool useRandomBuilderFaction = false;
+        public bool useRandomTraderFaction = false;
+        public bool ignoreCleanupRules = false;
+        public bool initializeStoreBlocks = true;//9+7=16
+        //public List<string> containerTypesForStoreOrders; will introduce as custom lines ---------------------
+        public double pauseAutopilotAtPlayerDistance = -1;//-1 for ignore
+        public bool forceStaticGrid = false;
+        public bool adminSpawnOnly = false;
+        public double minSpawnFromWorldCenter = -1;
+        public double maxSpawnFromWorldCenter = -1;//5+16=21
+        //public List<string> planetBlackList; will introduce as custom lines ----------------------------------
+        //public List<string> planetWhitelist; will introduce as custom lines ----------------------------------
+        public bool planetRequiresVacuum = false;
+        public bool planetRequiresAtmo = false;
+        public bool planetRequiresOxygen = false;
+        public double planetMinimumSize = -1;
+        public double planetMaximumSize = -1;
+        public bool useThreatLevelCheck = false;
+        public double threatLevelCheckRange = -1;
+        public bool threatLevelCheckOtherNPCOwners = false;
+        public double threatScoreMinimum = -1;
+        public double threatScoreMaximum = -1;
+        public bool usePCUCheck = false;
+        public double PCUCheckRadius = 5000;
+        public double PCUMinimun = -1;
+        public double PCUMaximum = -1;
+        public bool usePlayerCountCheck = false;
+        public double playerCountCheckRadius = -1;
+        public int minimumPlayers = 0;
+        public int maximumPlayers = 0;
+        public bool usePlayerCredits = false;
+        public bool includeAllPlayersInRadius = true;
+        public bool includeFactionBalance = true;
+        public double playerCreditCheckRadius = 5000;
+        public int minimumPlayerCredits = 0;
+        public int maximumPlayerCredits = 0;
+        public bool usePlayerFactionReputation = false;
+        public double playerReputationCheckRadius = 0;
+        public string checkReputationAgainstOtherNPCFaction = "";
+        public double minimumReputation = -1500;
+        public double maximumReputation = 1500;
+        public bool attachModStorageComponentToGrid = false;
+        public string storageKey = "";
+        public string storageValue = "";//32+21=53
+        //public List<string> requireAllMods; will introduce as custom lines -----------------------------
+        //public List<string> requireAnyMods; will introduce as custom lines -----------------------------
+        //public List<string> excludeAnyMods; will introduce as custom lines -----------------------------
+        //public List<string> excludeAllMods; will introduce as custom lines -----------------------------
+        //public List<string> modBlockExists; will introduce as custom lines -----------------------------
+        //public List<int> requiredPlayersOnline; will introduce as custom lines -------------------------
+        public bool useKnowPlayerLocations = false;
+        public bool knownPlayerLocationMustMatchFaction = true;
+        public double knownPlayerLocationMinSpawnedEncounters = 0;
+        public double knownPlayerLocationMaxSpawnedEncounters = 0;
+        public string territory = "";
+        public double minDistanceFromTerritoryCenter = -1;
+        public double maxDistanceFromTerritoryCenter = -1;
+        public bool rotateFirstCockpitToForward = false;
+        public bool spawnRandomCargo = true;
+        public bool disableDampeners = false;
+        public bool reactorsOn = true;
+        public bool removeVoxelsIfGridRemoved = true;//88 total //12+53=65
+
+        public List<string> customLines = new List<string>();
+
+        public override string ToString()
+        {
+            string output = "\t\t\t<Description>\n";
+
+            if (isTerritory)
+            {
+                output += $"\t\t\t[Modular Encounters Territory]\n";
+                output += $"\t\t\t[Name:{name}]\n";
+                output += $"\t\t\t[Type:{type}]\n";
+                output += $"\t\t\t[Active:{active.ToString()}]\n";
+                output += $"\t\t\t[Radius:{radius.ToString()}]\n";
+                if(scaleRadiusWithPlanetSize)
+                    output += $"\t\t\t[ScaleRadiusWithPlanetSize:{scaleRadiusWithPlanetSize.ToString()}]\n";
+                output += $"\t\t\t[CoordsX:{coordsX}]\n";
+                output += $"\t\t\t[CoordsY:{coordsY}]\n";
+                output += $"\t\t\t[CoordsZ:{coordsZ}]\n";
+                if (announceArriveDepart)
+                {
+                    output += $"\t\t\t[AnnounceArriveDepart:{announceArriveDepart.ToString()}]\n";
+                    output += $"\t\t\t[CustomArriveMessage:{customArriveMessage}]\n";
+                    output += $"\t\t\t[CustomDepartMessage:{customDepartMessage}]\n";
+                }
+                if(!string.IsNullOrEmpty(planetGeneratorName))
+                    output += $"\t\t\t[PlanetGeneratorName:{planetGeneratorName}]\n";
+            }
+            else
+            {
+                output += "\t\t\t[Modular Encounters SpawnGroup]\n";
+                if(spaceCargoShip)
+                    output += $"\t\t\t[SpaceCargoShip:{spaceCargoShip.ToString()}]\n";
+                if(lunarCargoShip)
+                    output += $"\t\t\t[LunarCargoShip:{lunarCargoShip.ToString()}]\n";
+                if(spaceRandomEncounter)
+                    output += $"\t\t\t[SpaceRandomEncounter:{spaceRandomEncounter.ToString()}]\n";
+                if(atmosphericCargoShip)
+                    output += $"\t\t\t[AtmosphericCargoShip:{atmosphericCargoShip.ToString()}]\n";
+                if(useAutoPilotInSpace)
+                    output += $"\t\t\t[UseAutoPilotInSpace:{useAutoPilotInSpace.ToString()}]\n";
+                if (planetaryInstallation)
+                {
+                    output += $"\t\t\t[PlanetaryInstallation:{planetaryInstallation.ToString()}]\n";
+                    output += $"\t\t\t[PlanetaryInstallationType:{planetaryInstallationType}]\n";
+                    output += $"\t\t\t[CutVoxelsAtAirtightCells:{cutVoxelsAtAirtightCells.ToString()}]\n";
+                    output += $"\t\t\t[RemoveVoxelsIfGridRemoved:{removeVoxelsIfGridRemoved.ToString()}]\n";
+                }
+                output += $"\t\t\t[UniqueEncounter:{uniqueEncounter.ToString()}]\n";
+                output += $"\t\t\t[FactionOwner:{factionOwner}]\n";
+                if(useRandomMinerFaction)
+                    output += $"\t\t\t[UseRandomMinerFaction:{useRandomMinerFaction.ToString()}]\n";
+                if(useRandomBuilderFaction)
+                    output += $"\t\t\t[UseRandomBuilderFaction:{useRandomBuilderFaction.ToString()}]\n";
+                if(useRandomTraderFaction)
+                    output += $"\t\t\t[UseRandomTraderFaction:{useRandomBuilderFaction.ToString()}]\n";
+                if(!ignoreCleanupRules)
+                    output += $"\t\t\t[IgnoreCleanupRules:{ignoreCleanupRules.ToString()}]\n";
+                if(!replenishSystems)
+                    output += $"\t\t\t[ReplenishSystems:{replenishSystems.ToString()}]\n";
+                output += $"\t\t\t[InitializeStoreBlocks:{initializeStoreBlocks.ToString()}]\n";
+                if(pauseAutopilotAtPlayerDistance != -1)
+                    output += $"\t\t\t[PauseAutopilotAtPlayerDistance:{pauseAutopilotAtPlayerDistance.ToString()}]\n";
+                if(forceStaticGrid)
+                    output += $"\t\t\t[ForceStaticGrid:{forceStaticGrid.ToString()}]\n";
+                if(adminSpawnOnly)
+                    output += $"\t\t\t[AdminSpawnOnly:{adminSpawnOnly.ToString()}]\n";
+                if (minSpawnFromWorldCenter != -1)
+                {
+                    output += $"\t\t\t[MinSpawnFromWorldCenter:{minSpawnFromWorldCenter.ToString()}]\n";
+                }
+                if (maxSpawnFromWorldCenter != -1)
+                {
+                    output += $"\t\t\t[MaxSpawnFromWorldCenter:{maxSpawnFromWorldCenter.ToString()}]\n";
+                }
+                if(planetRequiresVacuum)
+                    output += $"\t\t\t[PlanetRequiresVacuum:{planetRequiresVacuum.ToString()}]\n";
+                if(planetRequiresAtmo)
+                    output += $"\t\t\t[PlanetRequiresAtmo:{planetRequiresAtmo.ToString()}]\n";
+                if(planetRequiresOxygen)
+                    output += $"\t\t\t[PlanetRequiresOxygen:{planetRequiresOxygen.ToString()}]\n";
+                if(planetMinimumSize != -1)
+                    output += $"\t\t\t[PlanetMinimumSize:{planetMinimumSize.ToString()}]\n";
+                if(planetMaximumSize != -1)
+                    output += $"\t\t\t[PlanetMaximumSize:{planetMaximumSize.ToString()}]\n";
+                if (useThreatLevelCheck)
+                {
+                    output += $"\t\t\t[UseThreatLevelCheck:{useThreatLevelCheck.ToString()}]\n";
+                    output += $"\t\t\t[ThreatLevelCheckRange:{threatLevelCheckRange.ToString()}]\n";
+                    output += $"\t\t\t[ThreatIncludeOtherNpcOwners:{threatLevelCheckOtherNPCOwners.ToString()}]\n";
+                    output += $"\t\t\t[ThreatScoreMinimum:{threatScoreMinimum.ToString()}]\n";
+                    output += $"\t\t\t[ThreatScoreMaximum:{threatScoreMaximum.ToString()}]\n";
+                }
+                if (usePCUCheck)
+                {
+                    output += $"\t\t\t[UsePCUCheck:{usePCUCheck.ToString()}]\n";
+                    output += $"\t\t\t[PCUCheckRadius:{PCUCheckRadius.ToString()}]\n";
+                    output += $"\t\t\t[PCUMinimum:{PCUMinimun.ToString()}]\n";
+                    output += $"\t\t\t[PCUMaximum:{PCUMaximum.ToString()}]\n";
+                }
+                if (usePlayerCountCheck)
+                {
+                    output += $"\t\t\t[UsePlayerCountCheck:{usePlayerCountCheck.ToString()}]\n";
+                    output += $"\t\t\t[PlayerCountCheckRadius:{playerCountCheckRadius.ToString()}]\n";
+                    output += $"\t\t\t[MinimumPlayers:{minimumPlayers.ToString()}]\n";
+                    output += $"\t\t\t[MaximumPlayers:{maximumPlayers.ToString()}]\n";
+                }
+                if (usePlayerCredits)
+                {
+                    output += $"\t\t\t[UsePlayerCredits:{usePlayerCredits.ToString()}]\n";
+                    output += $"\t\t\t[IncludeAllPlayersInRadius:{includeAllPlayersInRadius.ToString()}]\n";
+                    output += $"\t\t\t[IncludeFactionBalance:{includeFactionBalance.ToString()}]\n";
+                    output += $"\t\t\t[PlayerCreditsCheckRadius:{playerCreditCheckRadius.ToString()}]\n";
+                    output += $"\t\t\t[MinimumPlayerCredits:{minimumPlayerCredits.ToString()}]\n";
+                    output += $"\t\t\t[MaximumPlayerCredits:{maximumPlayerCredits.ToString()}]\n";
+                }
+                if (usePlayerFactionReputation)
+                {
+                    output += $"\t\t\t[UsePlayerFactionReputation:{usePlayerFactionReputation.ToString()}]\n";
+                    output += $"\t\t\t[PlayerReputationCheckRadius:{playerReputationCheckRadius.ToString()}]\n";
+                    output += $"\t\t\t[CheckReputationAgainstOtherNPCFaction:{checkReputationAgainstOtherNPCFaction.ToString()}]\n";
+                    output += $"\t\t\t[MinimumReputation:{minimumReputation.ToString()}]\n";
+                    output += $"\t\t\t[MaximumReputation:{maximumReputation.ToString()}]\n";
+                }
+                if (attachModStorageComponentToGrid)
+                {
+                    output += $"\t\t\t[AttachModStorageComponentToGrid:{attachModStorageComponentToGrid.ToString()}]\n";
+                    output += $"\t\t\t[StorageKey:{storageKey}]\n";
+                    output += $"\t\t\t[StorageValue:{storageValue}]\n";
+                }
+                if (useKnowPlayerLocations)
+                {
+                    output += $"\t\t\t[UseKnownPlayerLocations:{useKnowPlayerLocations.ToString()}]\n";
+                    output += $"\t\t\t[KnownPlayerLocationMustMatchFaction:{knownPlayerLocationMustMatchFaction.ToString()}]\n";
+                    output += $"\t\t\t[KnownPlayerLocationMinSpawnedEncounters:{knownPlayerLocationMinSpawnedEncounters.ToString()}]\n";
+                    output += $"\t\t\t[KnownPlayerLocationMaxSpawnedEncounters:{knownPlayerLocationMaxSpawnedEncounters.ToString()}]\n";
+                }
+                if (!string.IsNullOrEmpty(territory))
+                {
+                    output += $"\t\t\t[Territory:{territory.ToString()}]\n";
+                }
+                if (!string.IsNullOrEmpty(territory))
+                {
+                    output += $"\t\t\t[MinDistanceFromTerritoryCenter:{minDistanceFromTerritoryCenter.ToString()}]\n";
+                    output += $"\t\t\t[MaxDistanceFromTerritoryCenter:{maxDistanceFromTerritoryCenter.ToString()}]\n";
+                }
+                if(rotateFirstCockpitToForward)
+                    output += $"\t\t\t[RotateFirstCockpitToForward:{rotateFirstCockpitToForward.ToString()}]\n";
+                output += $"\t\t\t[SpawnRandomCargo:{spawnRandomCargo.ToString()}]\n";
+                output += $"\t\t\t[DisableDampeners:{disableDampeners.ToString()}]\n";
+                output += $"\t\t\t[ReactorsOn:{reactorsOn.ToString()}]\n";
+            }
+
+            foreach (string s in customLines)
+                output += "\t\t\t"+s+"\n";
+
+            output += $"\t\t\t</Description>\n";
+            return output;
+        }
+    }
+
+    public class MyVector3
+    {
+        public double X, Y, Z;
+
+        public MyVector3(double x, double y, double z)
+        {
+            X = x; Y = y; Z = z;
+        }
+
+        public MyVector3()
+        {
+            X = 0; Y = 0; Z = 0;
+        }
+    }
+}

@@ -1,0 +1,151 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &4871418431502700154
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4871418431502700133}
+  - component: {fileID: 4871418431502700132}
+  m_Layer: 0
+  m_Name: MenuFunctions
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4871418431502700133
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4871418431502700154}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -960, y: -540, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4871418431502700132
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4871418431502700154}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78bfec1c84193164d94d953c8cd43d3d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mainMenu: {fileID: 0}
+  createFileMenu: {fileID: 0}
+  createSpawnGroupMenu: {fileID: 0}
+  advancedSpawnGroupMenu: {fileID: 0}
+  createPrefabMenu: {fileID: 0}
+  managmentMenu: {fileID: 0}
+  fileTypeToggles:
+  - {fileID: 0}
+  - {fileID: 0}
+  SpawnGroupName: {fileID: 0}
+  SpawnGroupFrequency: {fileID: 0}
+  SpawnGroupTypes:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  IsTerritory: {fileID: 0}
+  Frequency: {fileID: 0}
+  FrequencyText: {fileID: 0}
+  Name: {fileID: 0}
+  Type: {fileID: 0}
+  Active: {fileID: 0}
+  Radius: {fileID: 0}
+  ScaleRadiusWithPlanetSize: {fileID: 0}
+  CoordsX: {fileID: 0}
+  CoordsY: {fileID: 0}
+  CoordsZ: {fileID: 0}
+  AnnounceArriveDepart: {fileID: 0}
+  CustomArriveMessage: {fileID: 0}
+  CustomDepartMessage: {fileID: 0}
+  PlanetGeneratorName: {fileID: 0}
+  SpaceCargoShip: {fileID: 0}
+  LunarCargoShip: {fileID: 0}
+  SpaceRandomEncounter: {fileID: 0}
+  AtmosphericCargoShip: {fileID: 0}
+  PlanetaryInstallation: {fileID: 0}
+  UseAutoPilotInSpace: {fileID: 0}
+  PlanetaryInstallationType: {fileID: 0}
+  CutVoxelsAtAirtightCells: {fileID: 0}
+  FactionOwner: {fileID: 0}
+  ReplenishSystems: {fileID: 0}
+  UniqueEncounter: {fileID: 0}
+  UseRandomMinerFaction: {fileID: 0}
+  UseRandomBuilderFaction: {fileID: 0}
+  UseRandomTraderFaction: {fileID: 0}
+  IgnoreCleanupRules: {fileID: 0}
+  InitializeStoreBlocks: {fileID: 0}
+  PauseAutopilotAtPlayerDistance: {fileID: 0}
+  ForceStaticGrid: {fileID: 0}
+  AdminSpawnOnly: {fileID: 0}
+  MinSpawnFromWorldCenter: {fileID: 0}
+  MaxSpawnFromWorldCenter: {fileID: 0}
+  PlanetRequiresVacuum: {fileID: 0}
+  PlanetRequiresAtmo: {fileID: 0}
+  PlanetRequiresOxygen: {fileID: 0}
+  PlanetMinimumSize: {fileID: 0}
+  PlanetMaximumSize: {fileID: 0}
+  UseThreatLevelCheck: {fileID: 0}
+  ThreatLevelCheckRange: {fileID: 0}
+  ThreatLevelCheckOtherNPCOwners: {fileID: 0}
+  ThreatScoreMinimum: {fileID: 0}
+  ThreatScoreMaximum: {fileID: 0}
+  UsePCUCheck: {fileID: 0}
+  PCUCheckRadius: {fileID: 0}
+  PCUMinimum: {fileID: 0}
+  PCUMaximum: {fileID: 0}
+  UsePlayerCountCheck: {fileID: 0}
+  PlayerCountCheckRadius: {fileID: 0}
+  MinimumPlayers: {fileID: 0}
+  MaximumPlayers: {fileID: 0}
+  UsePlayerCredits: {fileID: 0}
+  IncludeAllPlayersInRadius: {fileID: 0}
+  IncludeFactionBalance: {fileID: 0}
+  PlayerCreditCheckRadius: {fileID: 0}
+  MinimumPlayerCredits: {fileID: 0}
+  MaximumPlayerCredits: {fileID: 0}
+  UsePlayerFactionReputation: {fileID: 0}
+  PlayerReputationCheckRadius: {fileID: 0}
+  CheckReputationAgainstOtherNPCFaction: {fileID: 0}
+  MinimumReputation: {fileID: 0}
+  MaximumReputation: {fileID: 0}
+  AttachModStorageComponentToGrid: {fileID: 0}
+  StorageKey: {fileID: 0}
+  StorageValue: {fileID: 0}
+  useKnowPlayerLocations: {fileID: 0}
+  KnownPlayerLocationMustMatchFaction: {fileID: 0}
+  KnownPlayerLocationMinSpawnedEncounters: {fileID: 0}
+  KnownPlayerLocationMaxSpawnedEncounters: {fileID: 0}
+  Territory: {fileID: 0}
+  MinDistanceFromTerritoryCenter: {fileID: 0}
+  MaxDistanceFromTerritoryCenter: {fileID: 0}
+  RotateFirstCockpitToForward: {fileID: 0}
+  SpawnRandomCargo: {fileID: 0}
+  DisableDampeners: {fileID: 0}
+  ReactorsOn: {fileID: 0}
+  RemoveVoxelsIfGridRemoved: {fileID: 0}
+  SubtypeId: {fileID: 0}
+  BeaconText: {fileID: 0}
+  Speed: {fileID: 0}
+  SpeedText: {fileID: 0}
+  prefabHolder: {fileID: 0}
+  spawnGroupHolder: {fileID: 0}
+  prefabProp: {fileID: 8302608814164807553, guid: fdff1e43142c8cc4883939df3c7ee9f2,
+    type: 3}
+  spawnGroupProp: {fileID: 3637608252131197176, guid: 1edbdfd5e48c5d947b13ecedf1b98cf1,
+    type: 3}
+  resultText: {fileID: 0}
